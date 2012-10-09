@@ -4,7 +4,7 @@ class User < ActiveRecord::Base
   has_many :posts
   has_one :account
 
-  model_cache do
+  model_cache({:expires_in => 15.minutes}) do
     with_key
     with_attribute :login
     with_method :last_post

@@ -23,12 +23,14 @@ describe Cacheable do
 
     it "should cache by User#id" do
       User.find_cached(@user.id).should == @user
+      cache.options.should == {:expires_in=>15.minutes}
       cache.data["users/#{@user.id}"].should == @user
     end
 
     it "should get cached by User#id multiple times" do
       User.find_cached(@user.id)
       User.find_cached(@user.id).should == @user
+      cache.options.should == {:expires_in=>15.minutes}
     end
   end
 

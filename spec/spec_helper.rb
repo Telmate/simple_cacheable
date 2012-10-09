@@ -18,12 +18,15 @@ Dir[ File.join(MODELS, "*.rb") ].sort.each { |file| require File.basename(file) 
 
 class TestCache
   attr_reader :data
+  attr_accessor :options
 
   def initialize
     @data = {}
+    @options = nil
   end
 
-  def fetch(key, &block)
+  def fetch(key, opts=nil, &block)
+    @options ||= opts
     if read(key)
       read(key)
     else
@@ -41,10 +44,12 @@ class TestCache
 
   def delete(key)
     @data.delete key
+    @options = nil
   end
 
   def clear
     @data.clear
+    @options = nil
   end
 end
 

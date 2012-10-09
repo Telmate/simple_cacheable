@@ -2,8 +2,9 @@ module Cacheable
   def self.included(base)
     base.class_eval do
       class <<self
-        def model_cache(&block)
-          class_attribute :cached_key, :cached_indices, :cached_methods
+        def model_cache(opts = nil, &block)
+          class_attribute :cached_key, :cached_indices, :cached_methods, :options
+          self.options = opts
           instance_exec &block
         end
 
@@ -14,7 +15,7 @@ module Cacheable
             after_commit :expire_key_cache, :on => :update
 
             def self.find_cached(id)
-              Rails.cache.fetch "#{name.tableize}/" + id.to_i.to_s do
+              Rails.cache.fetch("#{name.tableize}/" + id.to_i.to_s, self.options) do
                 self.find(id)
               end
             end
@@ -33,7 +34,7 @@ module Cacheable
               def self.find_cached_by_#{attribute}(value)
                 self.cached_indices["#{attribute}"] ||= []
                 self.cached_indices["#{attribute}"] << value
-                Rails.cache.fetch attribute_cache_key("#{attribute}", value) do
+                Rails.cache.fetch(attribute_cache_key("#{attribute}", value), self.options) do
                   self.find_by_#{attribute}(value)
                 end
               end
@@ -51,7 +52,7 @@ module Cacheable
           methods.each do |meth|
             class_eval <<-EOF
               def cached_#{meth}
-                Rails.cache.fetch method_cache_key("#{meth}") do
+                Rails.cache.fetch(method_cache_key("#{meth}"), self.options) do
                   #{meth}
                 end
               end
@@ -67,7 +68,7 @@ module Cacheable
               polymorphic ||= false
               class_eval <<-EOF
                 def cached_#{association_name}
-                  Rails.cache.fetch belong_association_cache_key("#{association_name}", #{polymorphic}) do
+                  Rails.cache.fetch(belong_association_cache_key("#{association_name}", #{polymorphic}), self.options) do
                     #{association_name}
                   end
                 end
@@ -90,7 +91,7 @@ module Cacheable
 
               class_eval <<-EOF
                 def cached_#{association_name}
-                  Rails.cache.fetch have_association_cache_key("#{association_name}") do
+                  Rails.cache.fetch(have_association_cache_key("#{association_name}"), self.options) do
                     #{association_name}.respond_to?(:all) ? #{association_name}.all : #{association_name}
                   end
                 end
